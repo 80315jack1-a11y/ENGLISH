@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <rect width="192" height="192" rx="32" fill="#4361ee"/>
+  <text x="96" y="72" text-anchor="middle" font-size="48" font-family="Arial, sans-serif" font-weight="bold" fill="white">ABC</text>
+  <text x="96" y="130" text-anchor="middle" font-size="32" font-family="Arial, sans-serif" fill="white" opacity="0.9">單字卡</text>
+</svg>
