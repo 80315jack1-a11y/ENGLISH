@@ -1,21 +1,57 @@
 import { VocabWord, VocabSet } from "@/types/vocab";
 
+declare global {
+  interface Window {
+    electronStore?: {
+      get: (key: string) => string | null;
+      set: (key: string, value: string) => boolean;
+      remove: (key: string) => boolean;
+      getAll: () => Record<string, string>;
+    };
+  }
+}
+
 const STORAGE_KEY = "english-vocab-sets";
 const ACTIVE_SET_KEY = "english-vocab-active-set";
 
+// Unified storage: use electronStore (file-based) if available, otherwise localStorage
+function storageGet(key: string): string | null {
+  if (typeof window === "undefined") return null;
+  if (window.electronStore) {
+    return window.electronStore.get(key);
+  }
+  return localStorage.getItem(key);
+}
+
+function storageSet(key: string, value: string): void {
+  if (typeof window === "undefined") return;
+  if (window.electronStore) {
+    window.electronStore.set(key, value);
+  } else {
+    localStorage.setItem(key, value);
+  }
+}
+
+function storageRemove(key: string): void {
+  if (typeof window === "undefined") return;
+  if (window.electronStore) {
+    window.electronStore.remove(key);
+  } else {
+    localStorage.removeItem(key);
+  }
+}
+
 export function getAllSets(): VocabSet[] {
-  if (typeof window === "undefined") return [];
-  const data = localStorage.getItem(STORAGE_KEY);
+  const data = storageGet(STORAGE_KEY);
   return data ? JSON.parse(data) : [];
 }
 
 export function getActiveSetId(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem(ACTIVE_SET_KEY);
+  return storageGet(ACTIVE_SET_KEY);
 }
 
 export function setActiveSetId(id: string): void {
-  localStorage.setItem(ACTIVE_SET_KEY, id);
+  storageSet(ACTIVE_SET_KEY, id);
 }
 
 export function getActiveSet(): VocabSet | null {
@@ -33,12 +69,12 @@ export function saveSet(vocabSet: VocabSet): void {
   } else {
     sets.push(vocabSet);
   }
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(sets));
+  storageSet(STORAGE_KEY, JSON.stringify(sets));
 }
 
 export function deleteSet(id: string): void {
   const sets = getAllSets().filter((s) => s.id !== id);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(sets));
+  storageSet(STORAGE_KEY, JSON.stringify(sets));
 }
 
 export function updateWordFamiliarity(
@@ -52,7 +88,7 @@ export function updateWordFamiliarity(
   const word = set.words.find((w) => w.id === wordId);
   if (!word) return;
   word.familiarity = familiarity;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(sets));
+  storageSet(STORAGE_KEY, JSON.stringify(sets));
 }
 
 export function generateId(): string {
