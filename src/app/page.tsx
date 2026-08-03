@@ -154,6 +154,23 @@ export default function HomePage() {
     setDisplayOrder(newShuffled ? shuffleArray(order) : order);
   };
 
+  // Text-to-speech for pronunciation
+  const speak = useCallback((text: string) => {
+    if (typeof window === "undefined" || !window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = "en-US";
+    utterance.rate = 0.85;
+    window.speechSynthesis.speak(utterance);
+  }, []);
+
+  // Auto-speak when card changes
+  useEffect(() => {
+    if (currentWord) {
+      speak(currentWord.english);
+    }
+  }, [currentIndex, displayOrder, currentWord, speak]);
+
   // No sets available
   if (allSets.length === 0) {
     return (
@@ -257,6 +274,16 @@ export default function HomePage() {
               {/* English word - always visible */}
               <h2 className="text-4xl font-bold mb-4 text-gray-900">
                 {currentWord.english}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    speak(currentWord.english);
+                  }}
+                  className="ml-3 text-2xl text-gray-400 hover:text-blue-500 transition-colors align-middle"
+                  title="播放發音"
+                >
+                  🔊
+                </button>
               </h2>
 
               {/* Chinese + Example - reveal on tap/space */}
