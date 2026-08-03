@@ -11,12 +11,24 @@ import {
 import { exportSetAsCSV } from "@/lib/export";
 import Link from "next/link";
 
+// Fisher-Yates shuffle - returns a new shuffled array
+function shuffleArray<T>(arr: T[]): T[] {
+  const shuffled = [...arr];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
 export default function HomePage() {
   const [vocabSet, setVocabSet] = useState<VocabSet | null>(null);
   const [allSets, setAllSets] = useState<VocabSet[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [revealed, setRevealed] = useState(false);
   const [officeMode, setOfficeMode] = useState(false);
+  const [shuffled, setShuffled] = useState(false);
+  const [displayOrder, setDisplayOrder] = useState<number[]>([]);
 
   // Load data
   useEffect(() => {
@@ -25,12 +37,14 @@ export default function HomePage() {
     const active = getActiveSet();
     if (active) {
       setVocabSet(active);
+      // Initialize sequential order
+      setDisplayOrder(active.words.map((_, i) => i));
     }
   }, []);
 
   const currentWord: VocabWord | null =
-    vocabSet && vocabSet.words.length > 0
-      ? vocabSet.words[currentIndex]
+    vocabSet && vocabSet.words.length > 0 && displayOrder.length > 0
+      ? vocabSet.words[displayOrder[currentIndex]]
       : null;
 
   const goNext = useCallback(() => {
@@ -60,20 +74,21 @@ export default function HomePage() {
   const handleFamiliarity = useCallback(
     (level: 1 | 2 | 3) => {
       if (!vocabSet || !currentWord) return;
+      const actualIndex = displayOrder[currentIndex];
       updateWordFamiliarity(vocabSet.id, currentWord.id, level);
       // Update local state
       setVocabSet((prev) => {
         if (!prev) return prev;
         const updated = { ...prev, words: [...prev.words] };
-        updated.words[currentIndex] = {
-          ...updated.words[currentIndex],
+        updated.words[actualIndex] = {
+          ...updated.words[actualIndex],
           familiarity: level,
         };
         return updated;
       });
       goNext();
     },
-    [vocabSet, currentWord, currentIndex, goNext]
+    [vocabSet, currentWord, currentIndex, displayOrder, goNext]
   );
 
   // Keyboard listeners
@@ -124,7 +139,19 @@ export default function HomePage() {
       setVocabSet(selected);
       setCurrentIndex(0);
       setRevealed(false);
+      const order = selected.words.map((_, i) => i);
+      setDisplayOrder(shuffled ? shuffleArray(order) : order);
     }
+  };
+
+  const toggleShuffle = () => {
+    if (!vocabSet) return;
+    const newShuffled = !shuffled;
+    setShuffled(newShuffled);
+    setCurrentIndex(0);
+    setRevealed(false);
+    const order = vocabSet.words.map((_, i) => i);
+    setDisplayOrder(newShuffled ? shuffleArray(order) : order);
   };
 
   // No sets available
@@ -175,6 +202,16 @@ export default function HomePage() {
             }`}
           >
             {officeMode ? "🕶️ Office Mode" : "👁️ 一般模式"}
+          </button>
+          <button
+            onClick={toggleShuffle}
+            className={`text-sm px-3 py-1 rounded border transition-colors ${
+              shuffled
+                ? "bg-purple-600 text-white border-purple-600"
+                : "bg-white text-gray-600 border-gray-300 hover:border-gray-400"
+            }`}
+          >
+            {shuffled ? "🔀 隨機" : "📋 順序"}
           </button>
           {vocabSet && (
             <button
