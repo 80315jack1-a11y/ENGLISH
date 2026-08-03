@@ -1,15 +1,18 @@
-const { app, BrowserWindow, protocol } = require("electron");
+const { app, BrowserWindow } = require("electron");
 const path = require("path");
 const http = require("http");
 const fs = require("fs");
 
-// For portable mode: store user data next to the exe
-const exeDir = path.dirname(app.getPath("exe"));
-const userDataPath = path.join(exeDir, "english-vocab-data");
-if (!fs.existsSync(userDataPath)) {
-  fs.mkdirSync(userDataPath, { recursive: true });
+// Use a fixed path in APPDATA for persistent storage
+// This survives portable exe re-extraction
+const fixedUserData = path.join(
+  process.env.APPDATA || path.join(require("os").homedir(), "AppData", "Roaming"),
+  "english-vocab-app"
+);
+if (!fs.existsSync(fixedUserData)) {
+  fs.mkdirSync(fixedUserData, { recursive: true });
 }
-app.setPath("userData", userDataPath);
+app.setPath("userData", fixedUserData);
 
 let mainWindow;
 let server;
@@ -40,7 +43,6 @@ function startServer() {
 
       // If path ends with / or has no extension, try as .html
       if (!path.extname(urlPath)) {
-        // Try urlPath.html
         const htmlPath = path.join(OUT_DIR, urlPath + ".html");
         const indexPath = path.join(OUT_DIR, urlPath, "index.html");
 
@@ -48,8 +50,6 @@ function startServer() {
           filePath = htmlPath;
         } else if (fs.existsSync(indexPath)) {
           filePath = indexPath;
-        } else if (fs.existsSync(path.join(OUT_DIR, urlPath + "/index.html"))) {
-          filePath = path.join(OUT_DIR, urlPath + "/index.html");
         }
       }
 
@@ -92,7 +92,6 @@ async function createWindow() {
       preload: path.join(__dirname, "preload.js"),
       nodeIntegration: false,
       contextIsolation: true,
-      partition: "persist:vocab",
     },
     autoHideMenuBar: true,
   });
