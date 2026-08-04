@@ -1,14 +1,15 @@
 import { VocabSet } from "@/types/vocab";
 
 export function exportSetAsCSV(vocabSet: VocabSet): void {
-  const header = "english,chinese,example,exampleChinese,familiarity";
+  const header = "english,chinese,example,exampleChinese,similar,familiarity";
   const rows = vocabSet.words.map((w) => {
     const english = escapeCsvField(w.english);
     const chinese = escapeCsvField(w.chinese);
     const example = escapeCsvField(w.example || "");
     const exampleChinese = escapeCsvField(w.exampleChinese || "");
+    const similar = escapeCsvField(w.similar || "");
     const familiarity = w.familiarity.toString();
-    return `${english},${chinese},${example},${exampleChinese},${familiarity}`;
+    return `${english},${chinese},${example},${exampleChinese},${similar},${familiarity}`;
   });
 
   const csv = [header, ...rows].join("\n");

@@ -4,6 +4,7 @@ export interface VocabWord {
   chinese: string;
   example?: string;
   exampleChinese?: string;
+  similar?: string;
   familiarity: 0 | 1 | 2 | 3; // 0=未標記, 1=不會, 2=普通, 3=熟悉
 }
 

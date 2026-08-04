@@ -8,6 +8,7 @@ interface RawRow {
   chinese?: string;
   example?: string;
   exampleChinese?: string;
+  similar?: string;
   [key: string]: string | undefined;
 }
 
@@ -48,8 +49,15 @@ function normalizeRows(rows: Record<string, string>[]): RawRow[] {
       row["例句中文"] ||
       row["句子中文"] ||
       keys[3] && row[keys[3]];
+    const similar =
+      row["similar"] ||
+      row["Similar"] ||
+      row["SIMILAR"] ||
+      row["相似字"] ||
+      row["同義字"] ||
+      keys[4] && row[keys[4]];
 
-    return { english, chinese, example, exampleChinese };
+    return { english, chinese, example, exampleChinese, similar };
   });
 }
 
@@ -62,6 +70,7 @@ function rowsToWords(rows: RawRow[]): VocabWord[] {
       chinese: r.chinese!.trim(),
       example: r.example?.trim() || undefined,
       exampleChinese: r.exampleChinese?.trim() || undefined,
+      similar: r.similar?.trim() || undefined,
       familiarity: 0 as const,
     }));
 }

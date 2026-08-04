@@ -359,6 +359,18 @@ export default function HomePage() {
                           {currentWord.exampleChinese}
                         </p>
                       )}
+                      {currentWord.similar && (
+                        <div className="mt-4 pt-3 border-t border-gray-100">
+                          <p className="text-xs text-gray-400 mb-1">相似字</p>
+                          <p className="text-sm text-purple-600 font-medium">
+                            {currentWord.similar.split(/[/,;、]/).map((s, i) => (
+                              <span key={i} className="inline-block bg-purple-50 rounded px-2 py-0.5 mr-1.5 mb-1">
+                                {s.trim()}
+                              </span>
+                            ))}
+                          </p>
+                        </div>
+                      )}
                     </>
                   )}
                 </div>
