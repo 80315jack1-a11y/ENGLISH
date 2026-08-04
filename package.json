@@ -35,7 +35,7 @@
     "appId": "com.jacklai.english-vocab",
     "productName": "英文單字卡",
     "directories": {
-      "output": "dist-electron"
+      "output": "release"
     },
     "files": [
       "out/**/*",

@@ -29,6 +29,19 @@ export default function HomePage() {
   const [officeMode, setOfficeMode] = useState(false);
   const [shuffled, setShuffled] = useState(false);
   const [displayOrder, setDisplayOrder] = useState<number[]>([]);
+  const [filter, setFilter] = useState<0 | 1 | 2 | 3>(0); // 0=全部, 1=不會, 2=普通, 3=熟悉
+
+  // Build display order based on filter + shuffle
+  const buildDisplayOrder = useCallback(
+    (words: VocabWord[], doShuffle: boolean, filterLevel: 0 | 1 | 2 | 3) => {
+      let indices = words.map((_, i) => i);
+      if (filterLevel > 0) {
+        indices = indices.filter((i) => words[i].familiarity === filterLevel);
+      }
+      return doShuffle ? shuffleArray(indices) : indices;
+    },
+    []
+  );
 
   // Load data
   useEffect(() => {
@@ -37,10 +50,9 @@ export default function HomePage() {
     const active = getActiveSet();
     if (active) {
       setVocabSet(active);
-      // Initialize sequential order
-      setDisplayOrder(active.words.map((_, i) => i));
+      setDisplayOrder(buildDisplayOrder(active.words, false, 0));
     }
-  }, []);
+  }, [buildDisplayOrder]);
 
   const currentWord: VocabWord | null =
     vocabSet && vocabSet.words.length > 0 && displayOrder.length > 0
@@ -48,20 +60,20 @@ export default function HomePage() {
       : null;
 
   const goNext = useCallback(() => {
-    if (!vocabSet) return;
+    if (!vocabSet || displayOrder.length === 0) return;
     setRevealed(false);
     setCurrentIndex((prev) =>
-      prev < vocabSet.words.length - 1 ? prev + 1 : 0
+      prev < displayOrder.length - 1 ? prev + 1 : 0
     );
-  }, [vocabSet]);
+  }, [vocabSet, displayOrder]);
 
   const goPrev = useCallback(() => {
-    if (!vocabSet) return;
+    if (!vocabSet || displayOrder.length === 0) return;
     setRevealed(false);
     setCurrentIndex((prev) =>
-      prev > 0 ? prev - 1 : vocabSet.words.length - 1
+      prev > 0 ? prev - 1 : displayOrder.length - 1
     );
-  }, [vocabSet]);
+  }, [vocabSet, displayOrder]);
 
   const handleTap = useCallback(() => {
     if (!revealed) {
@@ -139,8 +151,7 @@ export default function HomePage() {
       setVocabSet(selected);
       setCurrentIndex(0);
       setRevealed(false);
-      const order = selected.words.map((_, i) => i);
-      setDisplayOrder(shuffled ? shuffleArray(order) : order);
+      setDisplayOrder(buildDisplayOrder(selected.words, shuffled, filter));
     }
   };
 
@@ -150,8 +161,15 @@ export default function HomePage() {
     setShuffled(newShuffled);
     setCurrentIndex(0);
     setRevealed(false);
-    const order = vocabSet.words.map((_, i) => i);
-    setDisplayOrder(newShuffled ? shuffleArray(order) : order);
+    setDisplayOrder(buildDisplayOrder(vocabSet.words, newShuffled, filter));
+  };
+
+  const handleFilterChange = (level: 0 | 1 | 2 | 3) => {
+    if (!vocabSet) return;
+    setFilter(level);
+    setCurrentIndex(0);
+    setRevealed(false);
+    setDisplayOrder(buildDisplayOrder(vocabSet.words, shuffled, level));
   };
 
   // Text-to-speech for pronunciation
@@ -247,6 +265,43 @@ export default function HomePage() {
         </div>
       </header>
 
+      {/* Filter bar */}
+      <div className="flex items-center gap-2 px-4 py-2 bg-gray-50 border-b">
+        <span className="text-xs text-gray-500 mr-1">篩選：</span>
+        {([
+          { level: 0, label: "全部", color: "gray" },
+          { level: 1, label: "不會", color: "red" },
+          { level: 2, label: "普通", color: "yellow" },
+          { level: 3, label: "熟悉", color: "green" },
+        ] as const).map(({ level, label, color }) => (
+          <button
+            key={level}
+            onClick={() => handleFilterChange(level)}
+            className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
+              filter === level
+                ? level === 0
+                  ? "bg-gray-700 text-white border-gray-700"
+                  : level === 1
+                  ? "bg-red-500 text-white border-red-500"
+                  : level === 2
+                  ? "bg-yellow-500 text-white border-yellow-500"
+                  : "bg-green-500 text-white border-green-500"
+                : "bg-white text-gray-600 border-gray-300 hover:border-gray-400"
+            }`}
+          >
+            {label}
+            {vocabSet && level > 0 && (
+              <span className="ml-1">
+                ({vocabSet.words.filter((w) => w.familiarity === level).length})
+              </span>
+            )}
+          </button>
+        ))}
+        <span className="ml-auto text-xs text-gray-400">
+          {displayOrder.length} 字
+        </span>
+      </div>
+
       {/* Main card area */}
       <main
         className="flex-1 flex flex-col items-center justify-center p-6 cursor-pointer select-none"
@@ -256,7 +311,7 @@ export default function HomePage() {
           <div className="w-full max-w-lg">
             {/* Progress */}
             <div className="text-center text-sm text-gray-400 mb-6">
-              {currentIndex + 1} / {vocabSet!.words.length}
+              {currentIndex + 1} / {displayOrder.length}
             </div>
 
             {/* Card */}
@@ -354,7 +409,11 @@ export default function HomePage() {
             </div>
           </div>
         ) : (
-          <p className="text-gray-400">此單字集沒有單字</p>
+          <p className="text-gray-400">
+            {displayOrder.length === 0 && filter > 0
+              ? `沒有標記為「${filter === 1 ? "不會" : filter === 2 ? "普通" : "熟悉"}」的單字`
+              : "此單字集沒有單字"}
+          </p>
         )}
       </main>
     </div>
